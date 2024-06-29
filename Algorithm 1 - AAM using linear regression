@@ -1,0 +1,53 @@
+def f(x, X, y):
+  y_pred = np.dot(X, x)
+  return np.sum((y_pred - y)**2) 
+
+def gradient_f(x, X, y):
+  y_pred = np.dot(X, x)
+  return 2 * np.dot(X.T, (y_pred - y))  
+
+def f_beta(beta, x_k, v_k, X, y):
+  return f(x_k + beta * (v_k - x_k), X, y)
+
+def aam(x0, A0, v0, X, y):
+  max_iter = 500
+  x_k = np.copy(v0) 
+  v_k = np.copy(v0)  
+  A_k = A0
+
+  for k in range(max_iter):
+    res_beta = minimize_scalar(f_beta, args=(x_k, v_k, X, y))
+    beta_k = res_beta.x
+    y_k = x_k + beta_k * (v_k - x_k)
+    g_y_k = gradient_f(y_k, X, y)
+
+    def f_x_i(x_i, y_k, i_k, X, y):
+      y_k_copy = np.copy(y_k)
+      y_k_copy[i_k] = x_i
+      return f(y_k_copy, X, y)
+    x_next = np.zeros_like(x_k)
+    for i_k in range(len(x_k)):
+      res_x = minimize_scalar(f_x_i, args=(y_k, i_k, X, y))
+      x_next[i_k] = res_x.x
+    x_k = x_next
+
+    a_k = np.sqrt(2 * A_k * f(y_k, X, y) / np.linalg.norm(g_y_k)**2)
+    A_k = A_k + a_k
+    v_k = v_k - a_k * g_y_k
+  return x_k
+
+np.random.seed(0) 
+m = 100
+n = 2
+
+X = np.random.randn(m, n)
+true_coeff = np.random.randn(n)
+y = np.dot(X, true_coeff) + np.random.randn(m) 
+x0 = np.random.randn(n)
+A0 = 0
+v0 = np.random.randn(n)
+result = aam(x0, A0, v0, X, y)
+
+print("True coefficients:", true_coeff)
+print("Optimized coefficients:", result)
+print("Objective value at optimized coefficients:", f(result, X, y))
