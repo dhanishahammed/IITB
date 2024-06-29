@@ -1,0 +1,40 @@
+import numpy as np
+
+def am(X, y, beta0, b0, max_iter=1000, epsilon=1e-6, delta_beta=1e-6, delta_b=1e-6):
+    beta = beta0
+    b = b0
+    k = 0
+
+    while k < max_iter:
+        #Optimize beta, keeping b fixed
+        beta_next = np.linalg.inv(X.T @ X) @ X.T @ (y - b)
+
+        #Optimize b, keeping beta fixed
+        b_next = np.mean(y - X @ beta)
+
+        # Check convergence
+        if np.abs(np.mean((X @ beta_next + b_next - y)**2) - np.mean((X @ beta + b - y)**2)) < epsilon \
+           and np.linalg.norm(beta_next - beta) < delta_beta \
+           and np.abs(b_next - b) < delta_b:
+            print(f'Converged at iteration {k}')
+            break
+
+        # Update variables for next iteration
+        beta = beta_next
+        b = b_next
+        k += 1
+
+    if k >= max_iter:
+        print('Maximum iterations reached without convergence.')
+    return beta, b
+
+np.random.seed(0)
+X = np.random.rand(100, 2)
+beta0 = np.zeros(2)
+b0 = 0.0
+beta_true = np.array([2.5, -1.3])
+b_true = 1.5
+y = X @ beta_true + b_true + np.random.randn(100) * 0.1
+beta_hat, b_hat = am(X, y, beta0, b0)
+print(f'Estimated coefficients: {beta_hat}')
+print(f'Estimated intercept: {b_hat}')
