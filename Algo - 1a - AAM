@@ -1,3 +1,6 @@
+import numpy as np
+from scipy.optimize import minimize_scalar
+
 def f(x, X, y):
   y_pred = np.dot(X, x)
   return np.sum((y_pred - y)**2)  
