@@ -1,0 +1,51 @@
+import numpy as np
+
+def nesterovs(X, y):
+    gamma = 0.9
+    alpha = 0.1
+    e = 1e-6
+    max_iter = 1000
+    n, d = X.shape
+    beta = np.zeros((d, 1))
+    b = 0
+    v_beta = np.zeros((d, 1))
+    v_b = 0
+    y = y.reshape(-1, 1)
+
+    for k in range(max_iter):
+        # Compute lookahead position
+        beta_hat = beta - gamma * v_beta
+        b_hat = b - gamma * v_b
+
+        # Compute gradient at lookahead position
+        residuals = X.dot(beta_hat) + b_hat - y
+        grad_beta = X.T.dot(residuals) / n
+        grad_b = np.sum(residuals) / n
+
+        # Update velocities
+        v_beta = gamma * v_beta + alpha * grad_beta
+        v_b = gamma * v_b + alpha * grad_b
+
+        # Update parameters
+        beta = beta - v_beta
+        b = b - v_b
+
+        # Check for convergence
+        if np.linalg.norm(grad_beta) < epsilon and abs(grad_b) < epsilon:
+            break
+
+    return beta.flatten(), b
+
+np.random.seed(0)
+n = 100
+d = 2
+X = np.random.randn(n, d)
+true_beta = np.random.randn(d)
+true_b = 1.0
+y = X.dot(true_beta) + true_b + np.random.randn(n) * 0.1  # Add some noise
+beta_approx, b_approx = nesterovs(X, y)
+
+print("True beta:", true_beta)
+print("Approximate beta (Nesterov):", beta_approx)
+print("True intercept (b):", true_b)
+print("Approximate intercept (b) (Nesterov):", b_approx)
