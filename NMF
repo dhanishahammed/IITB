@@ -1,0 +1,37 @@
+import numpy as np
+
+def nmf(V, rank):
+    max_iter=500
+    e = 1e-6
+    m, n = V.shape
+    W = np.abs(np.random.rand(m, rank))
+    H = np.abs(np.random.rand(rank, n))
+
+    for iter in range(max_iter):
+        # Update W
+        WH = np.dot(W, H)
+        W *= np.dot(V, H.T) / np.dot(WH, H.T)
+        # Update H
+        WH = np.dot(W, H)
+        H *= np.dot(W.T, V) / np.dot(W.T, WH)
+
+        # Convergence
+        if np.linalg.norm(V-WH) < e:
+            print(f'Converged at iteration {iter}')
+            break
+    return W, H
+
+np.random.seed(0)
+V = np.abs(np.random.randn(10, 8))
+rank = np.linalg.matrix_rank(V)
+
+W, H = nmf(V, rank)
+
+print("Original Matrix V:")
+print(V)
+print("Factorized Matrix W:")
+print(W)
+print("Factorized Matrix H:")
+print(H)
+print("Reconstructed Matrix WH:")
+print(np.dot(W, H))
