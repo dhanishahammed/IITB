@@ -40,8 +40,10 @@ def aam(f, grad_f, S, x0, v0):
     while not np.isclose(f(y_k) - (a_k ** 2) / (2 * A_k) * np.linalg.norm(grad_y_k) ** 2, f(x_k), atol=tol):
       a_k *= 0.5
     v = v - a_k * grad_y_k
-
-  return x_k
+    x = x_k
+    A = A_k
+    a = a_k
+  return x
 
 np.random.seed(0)
 X = 2 * np.random.rand(100, 1)
