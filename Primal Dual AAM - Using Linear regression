@@ -10,7 +10,7 @@ def grad_mse_loss(theta, X, y):
 
 def S(i):
   def constraint(y):
-      return y  # Placeholder for now, adjust as needed
+      return y 
   return constraint
 
 def primal_dual_aam(p, grad_p, S, x0, eta0, zeta0, lambda0):
