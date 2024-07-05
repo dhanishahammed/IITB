@@ -1,0 +1,66 @@
+import numpy as np
+
+def mse_loss(theta, X, y):
+  predictions = X @ theta
+  return np.mean((predictions - y) ** 2)
+
+def grad_mse_loss(theta, X, y):
+  predictions = X @ theta
+  return (2 / X.shape[0]) * X.T @ (predictions - y)
+
+def S(i):
+  def constraint(y):
+      return y  # Placeholder for now, adjust as needed
+  return constraint
+
+def primal_dual_aam(p, grad_p, S, x0, eta0, zeta0, lambda0):
+  A0 = 0
+  x_hat = x0
+  eta = eta0
+  zeta = zeta0
+  lambda_k = lambda0
+  A = A0
+  a = 1e-6
+  max_iter = 100
+  tol = 1e-6
+
+  for k in range(max_iter):
+    beta_set = np.linspace(0, 1, 100)
+    beta_values = [p(lambda_k + beta * (zeta - eta)) for beta in beta_set]
+    beta_k = beta_set[np.argmin(beta_values)]
+    lambda_k = beta_k * zeta + (1 - beta_k) * eta
+
+    grad_lambda_k = grad_p(lambda_k)
+    i_k = np.argmax([np.linalg.norm(grad_lambda_k[i]) ** 2 for i in range(grad_lambda_k.shape[0])])
+
+    eta_set = [S(i_k)(lambda_k)]
+    eta_values = [p(eta_candidate) for eta_candidate in eta_set]
+    eta_next = eta_set[np.argmin(eta_values)]
+
+    A_k = A + a
+    a_k = a
+    while not np.isclose(p(lambda_k) - (a_k ** 2) / (2 * A_k) * np.linalg.norm(grad_lambda_k) ** 2, p(eta_next), atol=tol):
+      a_k *= 0.5
+
+    zeta_next = zeta - a_k * grad_lambda_k
+    x_hat_next = (a_k * lambda_k + A * x_hat) / A_k
+
+    eta = eta_next
+    zeta = zeta_next
+    A = A_k
+    x_hat = x_hat_next
+
+  return x_hat, eta
+
+np.random.seed(0)
+X = 2 * np.random.rand(100, 1)
+y = 4 + 3 * X + np.random.randn(100, 1)
+b = np.c_[np.ones((100, 1)), X]
+theta0 = np.random.randn(2, 1)
+eta0 = np.zeros_like(theta0)
+zeta0 = np.zeros_like(theta0)
+lambda0 = np.zeros_like(theta0)
+
+result, eta_final = primal_dual_aam(lambda theta: mse_loss(theta, b, y), lambda theta: grad_mse_loss(theta, b, y), S, theta0, eta0, zeta0, lambda0)
+print("Optimized theta:", result)
+#print("Final eta:", eta_final)
