@@ -1,0 +1,84 @@
+import numpy as np
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+
+iris = load_iris()
+X = iris.data
+y = (iris.target == 0).astype(float)
+
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 1)
+
+def f(beta):
+  residual = X_train @ beta - y_train
+  return 0.5 * np.sum(residual ** 2)
+
+def grad_f(beta):
+  residual = X_train @ beta - y_train
+  return X_train.T @ residual
+
+def backtracking_line_search(f, grad, beta, dk, alpha = 0.1, gamma = 0.8):
+  beta_k = 1
+  while f(beta + beta_k * dk) > f(beta) + alpha * beta_k * grad.T @ dk:
+    beta_k *= gamma
+  return beta_k
+
+def minimize_subspace(f, grad_f, y_k, i_k, tol = 1e-6, max_iter=100):
+  x_k = y_k.copy()
+  for j in range(max_iter):
+    grad = grad_f(x_k)
+    dk = np.zeros_like(x_k)
+    dk[i_k] = -grad[i_k]
+    beta_k = backtracking_line_search(f, grad, x_k, dk)
+    x_k += beta_k * dk
+
+    if abs(grad[i_k]) < tol:
+      break
+  return x_k
+
+def aam(f, grad_f, beta0, v0):
+  max_iter = 1000
+  tol = 1e-6
+  beta = beta0
+  v = v0
+  A = 0
+  a = 1
+  for k in range(max_iter):
+    g_k = grad_f(beta)
+    dk = v - beta
+    beta_k = backtracking_line_search(f, g_k, beta, dk)
+    y_k = beta + beta_k * dk
+    g_k = grad_f(y_k)
+    i_k = np.argmax(g_k ** 2)
+    x_k = minimize_subspace(f, grad_f, y_k, i_k)
+
+    norm_grad_squared = np.linalg.norm(g_k) ** 2
+    A_k_plus_1 = A+a
+    a_k_plus_1 = np.sqrt(2 * A_k_plus_1 * (f(y_k) - f(x_k)) / norm_grad_squared)
+    v = v - a_k_plus_1 * g_k
+    beta = x_k
+    A = A_k_plus_1
+    a = a_k_plus_1
+
+    if np.linalg.norm(g_k) < tol:
+      print(f"converged in {k+1} iterations")
+      break
+
+  return beta
+
+beta0 = np.random.randn(X_train.shape[1])
+v0 = np.zeros_like(beta0)
+beta_opt = aam(f, grad_f, beta0, v0)
+y_pred = (X_test @ beta_opt > 0.5).astype(float)
+accuracy = accuracy_score(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
+
+
+print(f"Optimal beta: {beta_opt}")
+print(f"Test Accuracy: {accuracy}")
+print(f"Test MSE: {mse}")
